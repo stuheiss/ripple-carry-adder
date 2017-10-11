@@ -1,33 +1,27 @@
-module RippleCarryAdderTests exposing (allTests)
+module RippleCarryAdderTests exposing (..)
 
-import Test exposing (describe, test, fuzz3, Test)
-import Fuzz exposing (..)
+import Expect exposing (Expectation)
+import Fuzz exposing (Fuzzer, int, list, string, constant, intRange)
+import Test exposing (..)
 import Array
-import Expect
-
-
--- import Test.Runner.Html exposing (run)
-
 import RippleCarryAdder exposing (..)
 
 
-{- }
-   main =
-       run <|
-           describe "Addition"
-               [ test "1 + 1 = 2" <|
-                   \() ->
-                       (1 + 1) |> Expect.equal 2
-               ]
--}
-{-
-   main =
-       run <| allTests
--}
+suite : Test
+suite =
+    describe "4-bit Ripple Carry Adder Components rippleCarryAdderProperty only"
+        [ rippleCarryAdderProperty1
+        , rippleCarryAdderProperty2
+        , rippleCarryAdderProperty3
+        , rippleCarryAdderProperty4
+        ]
 
 
-allTests =
-    describe "4-bit Ripple Carry Adder Components"
+
+{--
+suite : Test
+suite =
+    describe "4-bit Ripple Carry Adder Components everything"
         [ inverterTests
         , andGateTests
         , orGateTests
@@ -37,8 +31,10 @@ allTests =
         , rippleCarryAdderProperty1
         , rippleCarryAdderProperty2
         , rippleCarryAdderProperty3
+        , rippleCarryAdderProperty4
         , additionTests
         ]
+--}
 
 
 additionTests =
@@ -47,6 +43,7 @@ additionTests =
             \() ->
                 (1 + 1) |> Expect.equal 2
         ]
+
 
 inverterTests =
     describe "Inverter"
@@ -161,7 +158,10 @@ fullAdderTests =
         ]
 
 
+
 -- four unit tests that covere the boundary cases and one more to communicate what the function actually does
+
+
 rippleCarryAdderTests =
     describe "4-bit ripple carry adder"
         [ describe "given two binary numbers and a carry-in digit"
@@ -192,135 +192,116 @@ rippleCarryAdderTests =
             ]
         ]
 
--- fuzz tests to test the properties of rippleCarryAdder
 
--- convert an int to a decimal representation of a binary
-intToBin : Int -> Int
-intToBin x =
-  let
-    -- helper to convert an int to a list of binaries
-    intToBinList x =
-      if x == 0 then [0]
-      else
-        let toBin0 x =
-          if x == 0 then []
-          else (toBin0 <| x // 2) ++ [x % 2]
-        in
-          toBin0 x
-  in
-    intToBinList x |>
-    -- add elements from the right while multiplying each elem by the next power of 10
-    List.foldr (\x (result,mul) -> (result + x * mul, mul * 10)) (0,1) |>
-    -- result is the first elem of the tuple
-    Tuple.first
+
+-- fuzz tests to test the properties of rippleCarryAdder
+-- helper: set the nth elem of list xs to v and return the modified list
+
+
+setDigitToValue : Int -> a -> List a -> List a
+setDigitToValue n v xs =
+    Array.fromList xs
+        |> Array.set n v
+        |> Array.toList
+
+
 
 -- Property #1: If the most significant digits of both inputs are 0, the carry-out digit will always be 0
-{-
-Elm doesn’t provide a fuzzer for generating binary numbers.
-Generate lists of binary digits of length <= 3 and convert to binary.
--}
+
+
 rippleCarryAdderProperty1 : Test
 rippleCarryAdderProperty1 =
-    describe "carry-out's relationship with most significant digits"
+    describe "#1 carry-out's relationship with most significant digits both 0"
         [ fuzz3
             (list (intRange 0 1))
             (list (intRange 0 1))
             (intRange 0 1)
-            "carry-out is 0 when most significant digits are both 0" <|
+            "#1 carry-out is 0 when most significant digits are both 0"
+          <|
             \list1 list2 carryIn ->
                 let
-                    convertToBinary digitsList =
-                        digitsList
-                            |> List.take 3
-                            |> numberFromDigits
-
                     firstInput =
-                        convertToBinary list1
+                        list1 |> padZeros 4 |> List.take 4 |> setDigitToValue 0 0 |> numberFromDigits
 
                     secondInput =
-                        convertToBinary list2
+                        list2 |> padZeros 4 |> List.take 4 |> setDigitToValue 0 0 |> numberFromDigits
                 in
                     rippleCarryAdder firstInput secondInput carryIn
-                        |> digits
-                        |> List.length
-                        |> Expect.lessThan 5
+                        |> Expect.lessThan 10000
         ]
+
+
 
 -- Property #2: If the most significant digits of both inputs are 1, the carry-out digit will always be 1
+
+
 rippleCarryAdderProperty2 : Test
 rippleCarryAdderProperty2 =
-    describe "carry-out's relationship with most significant digits"
+    describe "#2 carry-out's relationship with most significant digits both 1"
         [ fuzz3
-            (intRange 8 15)
-            (intRange 8 15)
+            (list (intRange 0 1))
+            (list (intRange 0 1))
             (intRange 0 1)
-            "carry-out is 1 when most significant digits are both 1" <|
-            \int1 int2 carryIn ->
+            "#2 carry-out is 1 when most significant digits are both 1"
+          <|
+            \list1 list2 carryIn ->
                 let
-                    toBin x =
-                        if x == 0 then "0"
-                        else (toBin <| x // 2) ++ (toString <| x % 2)
-
                     firstInput =
-                        Result.withDefault 0 (String.toInt <| toBin int1)
+                        list1 |> padZeros 4 |> List.take 4 |> setDigitToValue 0 1 |> numberFromDigits
 
                     secondInput =
-                        Result.withDefault 0 (String.toInt <| toBin int2)
+                        list2 |> padZeros 4 |> List.take 4 |> setDigitToValue 0 1 |> numberFromDigits
                 in
                     rippleCarryAdder firstInput secondInput carryIn
-                        |> digits
-                        |> List.length
-                        |> Expect.greaterThan 4
+                        |> Expect.greaterThan 1111
         ]
+
 
 
 -- Property #3: If the least significant digits of both inputs are 0 and the carry-in digit is also 0, the least significant digit of the output will always be 0
+
+
 rippleCarryAdderProperty3 : Test
 rippleCarryAdderProperty3 =
-    describe "carry-in's relationship with least significant digits"
+    describe "#3 carry-in's relationship with least significant digits both 0 and carry-in 0"
         [ fuzz3
             (list (intRange 0 1))
             (list (intRange 0 1))
             (constant 0)
-            """
-            the least significant digit of the output is 0 when the
-            carry-in is 0 and the least significant digits of both
-            inputs are 0
-            """ <|
+            "#3 the least significant digit of the output is 0 when the carry-in is 0 and the least significant digits of both inputs are 0"
+          <|
             \list1 list2 carryIn ->
                 let
                     firstInput =
-                        convertToBinary list1
+                        list1 |> padZeros 4 |> List.take 4 |> setDigitToValue 3 0 |> numberFromDigits
 
                     secondInput =
-                        convertToBinary list2
-
-                    convertToBinary digitsList =
-                        digitsList
-                            |> List.take 4
-                            |> setLastDigitToZero
-                            |> numberFromDigits
-
-                    setLastDigitToZero digitsList =
-                        Array.fromList digitsList
-                            |> Array.set (lastIndex digitsList) 0
-                            |> Array.toList
-
-                    lastIndex digitsList =
-                        (List.length digitsList) - 1
-
-                    isLastDigitZero digitsList =
-                        Array.fromList digitsList
-                            |> Array.get (lastIndex digitsList)
-                            |> Maybe.withDefault 0
-                            |> (==) 0
+                        list2 |> padZeros 4 |> List.take 4 |> setDigitToValue 3 0 |> numberFromDigits
                 in
-                    rippleCarryAdder firstInput secondInput carryIn
-                        |> digits
-                        |> isLastDigitZero
-                        |> Expect.equal True
+                    rippleCarryAdder firstInput secondInput carryIn % 10 |> Expect.equal 0
         ]
+
+
 
 -- Property #4: If the least significant digits of both inputs are 1 and the carry-in digit is 0, the least significant digit will always be 0
 
 
+rippleCarryAdderProperty4 : Test
+rippleCarryAdderProperty4 =
+    describe "carry-in's relationship with least significant digits both 1 and carry-in 0"
+        [ fuzz3
+            (list (intRange 0 1))
+            (list (intRange 0 1))
+            (constant 0)
+            "the least significant digit of the output is 0 when the carry-in is 0 and the least significant digits of both inputs are 1"
+          <|
+            \list1 list2 carryIn ->
+                let
+                    firstInput =
+                        list1 |> padZeros 4 |> List.take 4 |> setDigitToValue 3 1 |> numberFromDigits
+
+                    secondInput =
+                        list2 |> padZeros 4 |> List.take 4 |> setDigitToValue 3 1 |> numberFromDigits
+                in
+                    rippleCarryAdder firstInput secondInput carryIn % 10 |> Expect.equal 0
+        ]
