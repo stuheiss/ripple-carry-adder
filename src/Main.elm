@@ -49,6 +49,9 @@ view model =
         -- , viewHelper3 "rippleCarryAdder" rippleCarryAdder ( 1, 1, 1, 0 ) ( 1, 0, 1, 1 ) 1
         , viewHelper3 "rippleCarryAdder" rippleCarryAdder 0 0 0
         , viewHelper3 "rippleCarryAdder" rippleCarryAdder 0 0 1
+        , viewHelper3 "rippleCarryAdder" rippleCarryAdder 1001 1101 1
+        , viewHelper3 "rippleCarryAdder" rippleCarryAdder 1111 1111 0
+        , viewHelper3 "rippleCarryAdder" rippleCarryAdder 1111 1111 1
         ]
 
 
